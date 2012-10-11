@@ -59,7 +59,7 @@ if(not $help) {
     
     error_msg("cannot login to: " . $n->nurl()) unless ($n->logged_in());
     
-    log_msg("connected to nessus xmlrpc service established and authenticated");
+    log_msg("connected to nessus xmlrpc service");
 }
 
 

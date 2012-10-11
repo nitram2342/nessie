@@ -70,7 +70,7 @@ Set the pass:
 List policies:
 
   $ perl nessie.pl --password $PASS --list-policies
-  + connected to nessus xmlrpc service established and authenticated
+  + connected to nessus xmlrpc service
   + get available policies:
    -4  Tenable Policy Di... shared     External Network Scan          
    -3  Tenable Policy Di... shared     Internal Network Scan          
@@ -85,7 +85,7 @@ Run a scan:
 List scans:
 
   $ perl nessie.pl --password $PASS --list-reports
-  + connected to nessus xmlrpc service established and authenticated
+  + connected to nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
 
@@ -96,7 +96,7 @@ List scans:
 Download reports:
 
   $ perl nessie.pl --password $PASS --download all
-  + connected to nessus xmlrpc service established and authenticated
+  + connected to nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
 
