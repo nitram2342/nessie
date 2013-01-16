@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 print 
+    "\n",
     "                              _   _       _a_a       \n",
     "                  _   _     _{.`=`.}_    {/ ''\_     \n",
     "            _    {.`'`.}   {.'  _  '.}  {|  ._oo)    \n",
@@ -130,7 +131,7 @@ if($help) {
 	"  --pause                  - pause all runnings scans\n",
 	"  --resume                 - resume all scans\n",
 	"  --stop                   - stop all scans\n",
-	"  --batch-size             - split scans into batches (default size 20)\n",
+	"  --batch-size             - split scans into batches (default size $batch_size)\n",
 	"\n\n";
     exit;
 }
