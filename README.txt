@@ -1,3 +1,21 @@
+
+                              _   _       _a_a       
+                  _   _     _{.`=`.}_    {/ ''_     
+            _    {.`'`.}   {.'  _  '.}  {|  ._oo)    
+           {   {/ .-. } {/  .' '.  } {/  |        
+    ~jgs^~`~^~`~^~`~^~`~^~^~`^~^~`^~^~^~^~^~^~`^~~`  
+ @@@  @@@  @@@@@@@@   @@@@@@   @@@@@@   @@@  @@@@@@@@
+ @@@@ @@@  @@@@@@@@  @@@@@@@  @@@@@@@  @@@@  @@@@@@@@
+ @@!@!@@@  @@!       !@@      !@@     @@@!!  @@!     
+ !@!!@!@!  !@!       !@!      !@!       !@!  !@!     
+ @!@ !!@!  @!!!:!    !!@@!!   !!@@!!    @!@  @!!!:!  
+ !@!  !!!  !!!!!:     !!@!!!   !!@!!!   !@!  !!!!!:  
+ !!:  !!!  !!:            !:!      !:!  !!:  !!:     
+ :!:  !:!  :!:           !:!      !:!   :!:  :!:     
+  ::   ::   :: ::::  :::: ::  :::: ::   :::   :: ::::
+ ::    :   : :: ::   :: : :   :: : :     ::  : :: :: 
+
+
 About
 ----------------
 
@@ -66,16 +84,15 @@ usage: nessie.pl [ <options> ] <command> [ <command-options> ]
     --name <str>           - name of the scan
     --policy <str|id>      - policy to use for scanning
     --targets <addrs>      - targets to scan (e.g. '10.0.1.0/24, 10.0.2.0/24')
-    --file <str>           - specify a file with targets
+    --file <str>           - specify a file with targets (nmap-xml or plain text)
   --list-scans             - list running scans
   --list-reports           - list reports
-  --download <id>          - download report
+  --download <id|name|all> - download report
   --delete-report <id|all> - download report
   --pause                  - pause all runnings scans
   --resume                 - resume all scans
   --stop                   - stop all scans
-  --batch-size             - split scans into batches (default size 20)
-
+  --batch-size             - split scans into batches (default size 16)
 
 Examples
 ----------------
@@ -123,6 +140,20 @@ Download reports:
   + wrote 1051732 bytes to file c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663.nessus
 
 Download batch of reports:
+
+  $ perl nessie.pl --download test
+  + Connected to nessus xmlrpc service at https://127.0.0.1:8834/.
+  + get available reports:
+  + found 2 reports(s)
+
+    scan ID                                               status     scan name
+    --------------------------------------------------------------------------------
+    2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef  completed  test
+    61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83  completed  test
+  + Download report: 2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef
+  + wrote 964381 bytes to file 2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef.nessus
+  + Download report: 61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83
+  + wrote 671281 bytes to file 61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83.nessus
 
 
 Inspect report:
