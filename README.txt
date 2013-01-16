@@ -9,6 +9,11 @@ Author
 
 Martin Schobert <martin@weltregierung.de>
 
+Credits
+----------------
+
+jgs: for the nessie picture
+
 Installation
 ----------------
 
