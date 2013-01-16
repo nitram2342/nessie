@@ -32,6 +32,18 @@ Get the ca certificate from your Nessus installation:
 
   Copy the certificate into file 'ca'.
 
+OR:
+
+  Copy the certificates locally:
+  cat /opt/nessus/com/nessus/CA/*.pem > ca
+
+
+Write a configuration file:
+
+ $ cat .nessie
+ #user=nessus
+ password=secret
+
 
 Usage
 ----------------
@@ -63,13 +75,9 @@ usage: nessie.pl [ <options> ] <command> [ <command-options> ]
 Examples
 ----------------
 
-Set the pass:
-
-   PASS=secret
-
 List policies:
 
-  $ perl nessie.pl --password $PASS --list-policies
+  $ perl nessie.pl --list-policies
   + connected to nessus xmlrpc service
   + get available policies:
    -4  Tenable Policy Di... shared     External Network Scan          
@@ -79,12 +87,16 @@ List policies:
 
 Run a scan:
 
-  $ perl nessie.pl --password $PASS --scan --name test --policy -4 --targets 10.0.0.0/24
+  $ perl nessie.pl --scan --name test --policy -4 --targets 10.0.0.0/24
 
+Run a batched scan:
+
+  $ sudo nmap -v -sn -PS21,22,23,25,53,80,110,135,139,161,389,443,445,993,1025,3389 -oA /tmp/x 10.0.0.0/24
+  $ perl nessie.pl --scan -name test --policy fullscan --file /tmp/x.xml
 
 List scans:
 
-  $ perl nessie.pl --password $PASS --list-reports
+  $ perl nessie.pl --list-reports
   + connected to nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
@@ -95,7 +107,7 @@ List scans:
 
 Download reports:
 
-  $ perl nessie.pl --password $PASS --download all
+  $ perl nessie.pl --download all
   + connected to nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
@@ -104,6 +116,9 @@ Download reports:
     --------------------------------------------------------------------------------
     c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663  completed  test
   + wrote 1051732 bytes to file c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663.nessus
+
+Download batch of reports:
+
 
 Inspect report:
 
