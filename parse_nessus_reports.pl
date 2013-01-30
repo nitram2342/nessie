@@ -3,41 +3,86 @@
 use strict;
 use XML::Simple;
 use Data::Dumper;
+use Getopt::Long;
 
-my $file = "/home/martin/Downloads/nessus_report_targets_whitelist_enumerated_batchac.nessus";
 
-foreach my $file (@ARGV) {
-    show($file);
+my $sort_key = 'severity';
+my @files;
+my $help = 0;
+
+my @sort_keys = qw(severity port protocol svc_name pluginFamily pluginName synopsis);
+
+GetOptions ("sort=s" => \$sort_key,
+	    "files=s{,}" => \@files,
+	    "help" => \$help);
+
+
+if($help) {
+    print 
+	"usage: $0 [ <options> ]\n\n",
+        "  Options: \n",
+	"  --help                         - help screen\n",
+	"  --files <file1> [... <fileN> ] - nessus files to read\n",
+	"  --sort  <sort-key>             - sort results (default: severity, case sensitive}\n",
+	"\n",
+	"  Sort keys: @sort_keys)\n",
+	"\n\n";
+    exit;
+
 }
 
-sub show {
-    my $file = shift;
+#
+# check sort key
+#
+foreach my $sk (@sort_keys) {
+    if(lc($sk) eq lc($sort_key)) {
+	$sort_key = $sk;
+    }
+}
+
+
+
+#
+# collect data
+#
+
+my @results;
+
+foreach my $file (@ARGV) {
 
     my $ref = XMLin($file, ForceArray => ['ReportHost', 'ReportItem'] );
 
-    
     my @host_addresses = keys %{$ref->{Report}->{ReportHost}};
     
     foreach my $host (@host_addresses) {
 
-#	print Dumper($ref->{Report}->{ReportHost}->{$host});
-	
 	my $report_item = $ref->{Report}->{ReportHost}->{$host}->{ReportItem};
     
 	foreach my $ri (@$report_item) {
-	    # print Dumper($ri);
-	    
-	    my $severity = $ri->{severity};
-	    my $port = $ri->{port};
-	    my $protocol = $ri->{protocol};
-	    my $svc_name = $ri->{svc_name};
-	    my $pluginFamily = $ri->{pluginFamily};
-	    my $pluginName = $ri->{pluginName};
-	    my $synopsis = $ri->{synopsis};
-	    
-	    $synopsis =~ s!\n! !gs;
-	    
-	    printf("%d %15s %5d/%s %15s | %s -- %s\n", $severity, $host, $port, $protocol, $svc_name, $pluginName, $synopsis);
+	    $ri->{host} = $host; # XXX
+	    push @results, $ri;
 	}
     }
 }
+
+#
+# sort results
+#
+
+@results = sort{ $a->{$sort_key} <=> $b->{$sort_key} } @results;
+
+#
+# print
+#
+
+foreach my $ri (@results) {
+    
+    my $synopsis = $ri->{synopsis};
+    
+    $synopsis =~ s!\n! !gs;
+    
+    printf("%d %15s %5d/%s %15s | %s -- %s\n", 
+	   $ri->{severity}, $ri->{host}, $ri->{port}, $ri->{protocol}, 
+	   $ri->{svc_name}, $ri->{pluginName}, $synopsis);
+}
+
