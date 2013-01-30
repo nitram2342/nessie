@@ -1,8 +1,8 @@
 
                               _   _       _a_a       
-                  _   _     _{.`=`.}_    {/ ''_     
+                  _   _     _{.`=`.}_    {/ ''\_     
             _    {.`'`.}   {.'  _  '.}  {|  ._oo)    
-           {   {/ .-. } {/  .' '.  } {/  |        
+           { \  {/ .-. \} {/  .' '.  \} {/  |        
     ~jgs^~`~^~`~^~`~^~`~^~^~`^~^~`^~^~^~^~^~^~`^~~`  
  @@@  @@@  @@@@@@@@   @@@@@@   @@@@@@   @@@  @@@@@@@@
  @@@@ @@@  @@@@@@@@  @@@@@@@  @@@@@@@  @@@@  @@@@@@@@
@@ -19,30 +19,37 @@
 About
 ----------------
 
-A command line client for the Nessus scanner based on the CPAN module Net::Nessus::XMLRPC.
+Nessie is a command line client for the Nessus scanner based on the CPAN
+module Net::Nessus::XMLRPC.
 
+This client is shipped with a set of other useful tools for command line
+based security tests. These additional tools are:
 
-Author
-----------------
+ping_sweep.sh           -- An nmap based host discovery tool.
+hosts_up.pl             -- Parse an nmap file and extract running hosts.
+                           It is possible to filter by active ports.
+parse_nessus_reports.pl -- Parse a set of Nessus reports and display
+                           the results in a table.
 
-Martin Schobert <martin@weltregierung.de>
-
-Credits
-----------------
-
-jgs: for the nessie picture
 
 Installation
 ----------------
 
-Install the Nessus Scanner.
+Install the Nessus scanner module.
 
-Install the CPAN module Net::Nessus::XMLRPC:
+  Install the CPAN module Net::Nessus::XMLRPC. Please use the
+  version from github, which has additional features and bugfixes.
+  It should not be a problem, If you have already installed another
+  Net::Nessus::XMLRPC module globally, because 'make install' will
+  place the new module in your home directory.
 
-  $ sudo perl -MCPAN -e shell
-  > install Net::Nessus::XMLRPC
+  $ git clone git://github.com/nitram2342/Nessus-xmlrpc-perl.git
+  $ cd Nessus-xmlrpc-perl
+  $ perl Makefile.pl
+  $ make install
 
-Get the ca certificate from your Nessus installation:
+
+Get the CA certificate from your Nessus installation:
 
   $ sh get_cert.sh
   [...]
@@ -58,14 +65,18 @@ Get the ca certificate from your Nessus installation:
 OR:
 
   Copy the certificates locally:
-  cat /opt/nessus/com/nessus/CA/*.pem > ca
+  cat /opt/Nessus/com/Nessus/CA/*.pem > ca
 
 
 Write a configuration file:
 
  $ cat .nessie
- #user=nessus
+ #user=Nessus
  password=secret
+
+ Place the config file in either the same directory as the client
+ or in your home directory. If you do not have a configuration file,
+ you need to specify the Nessus credentials via command line parameter.
 
 
 Usage
@@ -84,7 +95,9 @@ usage: nessie.pl [ <options> ] <command> [ <command-options> ]
     --name <str>           - name of the scan
     --policy <str|id>      - policy to use for scanning
     --targets <addrs>      - targets to scan (e.g. '10.0.1.0/24, 10.0.2.0/24')
-    --file <str>           - specify a file with targets (nmap-xml or plain text)
+    --file <str>           - specify a file with targets (nmap-xml or a plain text 
+                             file with a single target per line)
+    --wait                 - wait for a batch to complete
   --list-scans             - list running scans
   --list-reports           - list reports
   --download <id|name|all> - download report
@@ -94,13 +107,14 @@ usage: nessie.pl [ <options> ] <command> [ <command-options> ]
   --stop                   - stop all scans
   --batch-size             - split scans into batches (default size 16)
 
+
 Examples
 ----------------
 
 List policies:
 
   $ perl nessie.pl --list-policies
-  + connected to nessus xmlrpc service
+  + connected to Nessus xmlrpc service
   + get available policies:
    -4  Tenable Policy Di... shared     External Network Scan          
    -3  Tenable Policy Di... shared     Internal Network Scan          
@@ -113,13 +127,16 @@ Run a scan:
 
 Run a batched scan:
 
-  $ sudo nmap -v -sn -PS21,22,23,25,53,80,110,135,139,161,389,443,445,993,1025,3389 -oA /tmp/x 10.0.0.0/24
-  $ perl nessie.pl --scan -name test --policy fullscan --file /tmp/x.xml
+  Run host discovery, which writes an nmap file.
+  $ sudo ping_sweep.sh 10.0.0.0/24
+
+  Run the scan:
+  $ perl nessie.pl --scan -name test --policy fullscan --file pingsweep_<date>.xml
 
 List scans:
 
   $ perl nessie.pl --list-reports
-  + connected to nessus xmlrpc service
+  + connected to Nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
 
@@ -130,19 +147,19 @@ List scans:
 Download reports:
 
   $ perl nessie.pl --download all
-  + connected to nessus xmlrpc service
+  + connected to Nessus xmlrpc service
   + get available reports:
   + found 1 reports(s)
 
     scan ID                                               status     scan name
     --------------------------------------------------------------------------------
     c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663  completed  test
-  + wrote 1051732 bytes to file c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663.nessus
+  + wrote 1051732 bytes to file c9661473-ceb2-c6d2-71a6-eb7971d628e8b30f0a2e8ebe7663.Nessus
 
 Download batch of reports:
 
   $ perl nessie.pl --download test
-  + Connected to nessus xmlrpc service at https://127.0.0.1:8834/.
+  + Connected to Nessus xmlrpc service at https://127.0.0.1:8834/.
   + get available reports:
   + found 2 reports(s)
 
@@ -151,20 +168,30 @@ Download batch of reports:
     2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef  completed  test
     61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83  completed  test
   + Download report: 2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef
-  + wrote 964381 bytes to file 2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef.nessus
+  + wrote 964381 bytes to file 2a6c57c3-e885-82b9-89f9-cc8dc59e8f6fc320021b33c338ef.Nessus
   + Download report: 61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83
-  + wrote 671281 bytes to file 61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83.nessus
+  + wrote 671281 bytes to file 61e381f5-8c05-4747-d4ad-a028371d9ef05f77ac5fcc3c5d83.Nessus
 
 
 Inspect report:
 
-  $ perl parse_nessus_reports.pl c9* | less -S
+  $ perl parse_nessus_reports.pl --files *.nessus --sort severity| less -S
 
   [...]
-  0        10.0.0.xx   631/tcp            ipp? | Nessus SNMP Scanner -- SNMP information is enumerated to learn about other open ports.
-  0        10.0.0.xx   515/tcp        printer? | Nessus SNMP Scanner -- SNMP information is enumerated to learn about other open ports.
-  0        10.0.0.xx    80/tcp           http? | Nessus SNMP Scanner -- SNMP information is enumerated to learn about other open ports.
-  0        10.0.0.xx     0/tcp         general | Nessus Scan Information -- Information about the Nessus scan.
-  0        10.0.0.xx     0/tcp         general | Do not scan printers -- The remote host appears to be a fragile device and will not be scanned.
-  0        10.0.0.xx   137/udp      netbios-ns | Windows NetBIOS / SMB Remote Host Information Disclosure -- It is possible to obtain [..]
+  0  10.0.0.xx  631/tcp       ipp? | Nessus SNMP Scanner -- SNMP information [..]
+  0  10.0.0.xx  515/tcp   printer? | Nessus SNMP Scanner -- SNMP information [..]
+  0  10.0.0.xx   80/tcp      http? | Nessus SNMP Scanner -- SNMP information [..]
+  0  10.0.0.xx    0/tcp    general | Nessus Scan Information -- Information  [..]
+  0  10.0.0.xx    0/tcp    general | Do not scan printers -- The remote host [..]
+  0  10.0.0.xx  137/udp netbios-ns | Windows NetBIOS / SMB Remote Host Infor [..]
   [...]
+
+Credits
+----------------
+
+jgs: for the nessie picture
+
+Author
+----------------
+
+Martin Schobert <martin@weltregierung.de>
