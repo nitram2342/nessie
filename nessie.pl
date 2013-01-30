@@ -3,9 +3,9 @@
 print 
     "\n",
     "                              _   _       _a_a       \n",
-    "                  _   _     _{.`=`.}_    {/ ''\_     \n",
+    "                  _   _     _{.`=`.}_    {/ ''\\_     \n",
     "            _    {.`'`.}   {.'  _  '.}  {|  ._oo)    \n",
-    "           { \  {/ .-. \} {/  .' '.  \} {/  |        \n",
+    "           { \\  {/ .-. \\} {/  .' '.  \\} {/  |        \n",
     "    ~jgs^~`~^~`~^~`~^~`~^~^~`^~^~`^~^~^~^~^~^~`^~~`  \n",
     " @@@  @@@  @@@@@@@@   @@@@@@   @@@@@@   @@@  @@@@@@@@\n",
     " @@@@ @@@  @@@@@@@@  @@@@@@@  @@@@@@@  @@@@  @@@@@@@@\n",
@@ -30,6 +30,7 @@ use Nmap::Parser;
 #use Nmap::Scanner;
 use Config::General;
 use File::stat;
+use FindBin qw($Bin);
 
 my $help;
 my $list_policies;
@@ -46,6 +47,7 @@ my $targets;
 my $file;
 my $download;
 my $batch_size = 16;
+my $wait = 0;
 
 my $server = 'https://127.0.0.1:8834/';
 my $user = 'nessus';
@@ -53,13 +55,17 @@ my $password;
 
 ### parse config
 
-my $config_file = ".nessie";
+my $config_file = $Bin . "/.nessie";
 
 # check config file permissions and parse the config
+if((-f $ENV{HOME}. $config_file) and !(-f $config_file)) {
+    $config_file = $ENV{HOME}. $config_file
+}
+
 if(-f $config_file) {
     my $mode = stat($config_file)->mode & 07777;
     if($mode == 0600) {
-	my $conf = new Config::General(-ConfigFile => ".nessie",
+	my $conf = new Config::General(-ConfigFile => $config_file,
 				       -DefaultConfig => {user => $user,
 							  server => $server,
 							  batch_size => $batch_size});
@@ -85,6 +91,7 @@ GetOptions ("list-policies"   => \$list_policies,
 	    "policy=s"        => \$policy,
 	    "targets=s"       => \$targets,
 	    "file=s"          => \$file,
+	    "wait"            => \$wait,
 	    "pause"           => \$pause_all,
 	    "resume"          => \$resume_all,
 	    "stop"            => \$stop_all,
@@ -100,40 +107,15 @@ GetOptions ("list-policies"   => \$list_policies,
 ### login
 my $n;
 if(not $help) {
+    log_msg("Connecting to nessus xmlrpc service at $server.");
     $n = Net::Nessus::XMLRPC->new($server, $user, $password);
     
     error_msg("Cannot login to: " . $n->nurl()) unless ($n->logged_in());
-    
-    log_msg("Connected to nessus xmlrpc service at $server.");
 }
 
 
 if($help) {
-    print 
-	"usage: $0 [ <options> ] <command> [ <command-options> ]\n\n",
-        "  Options: \n",
-	"  --server                 - XML-RPC URI of the nessus scan server\n",
-	"  --user                   - nessus user\n",
-	"  --password               - password\n",
-	"\n",
-	"  Commands:\n",
-	"  --list-policies          - list available scan policies in nessus\n",
-	"  --scan                   - start a new scan\n",
-	"    --name <str>           - name of the scan\n",
-	"    --policy <str|id>      - policy to use for scanning\n",
-	"    --targets <addrs>      - targets to scan (e.g. '10.0.1.0/24, 10.0.2.0/24')\n",
-	"    --file <str>           - specify a file with targets (nmap-xml or plain text)\n",
-	"  --list-scans             - list running scans\n",
-	"  --list-reports           - list reports\n",
-	"  --download <id|name|all> - download report\n",
-	"  --delete-report <id|all> - download report\n",
-#	"  --pause-scan         - pause a scan\n",
-	"  --pause                  - pause all runnings scans\n",
-	"  --resume                 - resume all scans\n",
-	"  --stop                   - stop all scans\n",
-	"  --batch-size             - split scans into batches (default size $batch_size)\n",
-	"\n\n";
-    exit;
+    print_help();
 }
 elsif($list_policies) {
     list_policies($n);
@@ -153,7 +135,7 @@ elsif($scan) {
     # determin the policy
     my $policy_id;
     if($policy =~ m!^[\+\-]?\d+$!) {
-	log_msg("treat policy parameter as policy id");
+	log_msg("Treat policy parameter as policy id.");
 	$policy_id = $policy;
     }
     else {
@@ -163,46 +145,45 @@ elsif($scan) {
 
     # start scan
     my $scan_id;
-    log_msg("starting a new scan");
+    log_msg("Starting a new scan.");
 
     if(defined($targets)) {
 	$scan_id = $n->scan_new($policy_id, $name, $targets);
     }
     elsif(defined($file)) {
+	my @targets;
+
 	if($file =~ m!.xml$!) {
-	    my @hosts_up = parse_nmap_xml($file);
-	    log_msg("Nmap scan $file reports " .($#hosts_up +1) . " active hosts.");
-	    
-	    $scan_id = batch_scan($n, $policy_id, $name, \@hosts_up);
-#	    exit;
+	    log_msg("File $file is an nmap file. Looking for active hosts.", 1);
+	    @targets = parse_nmap_xml($file);
 	}
 	else {
-	    $scan_id = $n->scan_new_file($policy_id, $name, $targets, $file);
+	    log_msg("File $file is a regular text file. Looking for targets.", 1);
+	    @targets = parse_targets($file);
+	}
+
+	log_msg("File $file defines " .($#targets +1) . " targets.", 1);
+	    
+	if(!batch_scan($n, $policy_id, $name, \@targets, $wait)) {
+	    error_msg("Scan failed.");
 	}
     }
     else {
 	error_msg("don't know what to scan");
     }
-
-    if($scan_id eq '') {
-	error_msg("scan failed.");
-    }
-    else {
-	log_msg("started a new scan with id " . $scan_id);
-    }
 }
 elsif($pause_all) {
     my $ret = $n->scan_pause_all();
-    print "ret: $ret\n";
+    print "ret: @{$ret}\n";
 }
 
 elsif($resume_all) {
     my $ret = $n->scan_resume_all();
-    print "ret: $ret\n";
+    print "ret: @{$ret}\n";
 }
 elsif($stop_all) {
     my $ret = $n->scan_stop_all();
-    print "ret: $ret\n";
+    print "ret: @{$ret}\n";
 }
 elsif(defined($download) and ($download ne '')) {
 
@@ -248,16 +229,41 @@ elsif(defined($delete_report) and ($delete_report ne '')) {
 }
 else {
     log_msg("Nothing to do.");
+    print_help();
 }
 
-#print "$scanid: ".$n->scan_status($scanid)."\n";        
-#my $reportcont=$n->report_file_download($scanid);
-#my $reportfile="report.xml";
-#open (FILE,">$reportfile") or die "Cannot open file $reportfile: $!";
-#print FILE $reportcont;
-#close (FILE);
 
 ### helper functions
+
+sub print_help {
+    print 
+	"\n",
+	"usage: $0 [ <options> ] <command> [ <command-options> ]\n\n",
+        "  Options: \n",
+	"  --server                 - XML-RPC URI of the nessus scan server\n",
+	"  --user                   - nessus user\n",
+	"  --password               - password\n",
+	"\n",
+	"  Commands:\n",
+	"  --list-policies          - list available scan policies in nessus\n",
+	"  --scan                   - start a new scan\n",
+	"    --name <str>           - name of the scan\n",
+	"    --policy <str|id>      - policy to use for scanning\n",
+	"    --targets <addrs>      - targets to scan (e.g. '10.0.1.0/24, 10.0.2.0/24')\n",
+	"    --file <str>           - specify a file with targets (nmap-xml or a plain text \n",
+	"                             file with a single target per line)\n",
+	"    --wait                 - wait for a batch to complete\n",
+	"  --list-scans             - list running scans\n",
+	"  --list-reports           - list reports\n",
+	"  --download <id|name|all> - download report\n",
+	"  --delete-report <id|all> - download report\n",
+#	"  --pause-scan         - pause a scan\n",
+	"  --pause                  - pause all runnings scans\n",
+	"  --resume                 - resume all scans\n",
+	"  --stop                   - stop all scans\n",
+	"  --batch-size             - split scans into batches (default size $batch_size)\n",
+	"\n\n";
+}
 
 sub error_msg {
     my $msg = shift;
@@ -267,7 +273,8 @@ sub error_msg {
 
 sub log_msg {
     my $msg = shift;
-    print "+ ", $msg, "\n";
+    my $level = shift || -1;
+    print((' ' x ($level+1)), "+ ", $msg, "\n");
 }
 
 sub check_param {
@@ -298,7 +305,7 @@ sub shorten {
 sub list_policies {
     my $n = shift;
 
-    log_msg("get available policies:");
+    log_msg("Get available policies:");
     my $p_list = $n->policy_list_hash();
     foreach my $pi (@$p_list) {
 	printf("%3d  %-20s %-10s %-30s %-s\n",
@@ -314,17 +321,18 @@ sub list_policies {
 sub list_scans {
     my $n = shift;
 
-    log_msg("get running scan(s)");
+    log_msg("Get running scan(s)");
     my $s_list = $n->scan_list_uids();
-    log_msg("found " . ($#$s_list + 1) . " scan(s)");
+    log_msg("Found " . ($#$s_list + 1) . " scan(s)");
 
     if($#$s_list > -1) {
-	printf("\n  %-52s  %-10s %s\n", "scan ID", "status", "scan name");
+	printf("\n  %-52s  %-18s %s\n", "scan ID", "status", "scan name");
 	print "  ", "-" x 80, "\n";
 	foreach my $sid (@$s_list) {
 	    my $name = $n->scan_get_name($sid);
-	    my $stat = $n->scan_status($sid);
-	    printf("  %s  %-10s %s\n", $sid, $stat, $name);
+#	    my $stat = $n->scan_status($sid);
+#	    printf("  %s  %-10s %s\n", $sid, $stat, $name);
+	    printf("  %s  %-18s %s\n", $sid, status_to_str($n, $sid), $name);
 	}
 	print "\n";
     }
@@ -337,9 +345,9 @@ sub list_reports {
 
     my @report_ids;
 
-    log_msg("get available reports:");
+    log_msg("Get available reports:");
     my $r_list = $n->report_list_hash();
-    log_msg("found " . ($#$r_list + 1) . " reports(s)");
+    log_msg("Found " . ($#$r_list + 1) . " reports(s)");
   
     if($#$r_list > -1) {
 	printf("\n  %-52s  %-10s %s\n", "scan ID", "status", "scan name");
@@ -364,19 +372,19 @@ sub download_report {
     my $ret = $n->report_file_download($report_id);
     
     if($ret) {
-	open(FILE, "> $report_file") or error_msg("failed to write report file $report_file: $!");
+	open(FILE, "> $report_file") or error_msg("Failed to write report file $report_file: $!");
 	print FILE $ret;
 	close FILE;
-	log_msg("wrote " . length($ret) . " bytes to file " . $report_file);
+	log_msg("Wrote " . length($ret) . " bytes to file " . $report_file . ".");
     }
     else {
-	error_msg("report download failed.");
+	error_msg("Report download failed.");
     }
 }
 
 
 sub batch_scan {
-    my ($n, $policy_id, $name, $hosts) = @_;
+    my ($n, $policy_id, $name, $hosts, $wait) = @_;
     
     my $batch_num = 0;
     while($#$hosts +1 > 0) {
@@ -391,22 +399,34 @@ sub batch_scan {
 	
 
 	if($scan_id eq '') {
-	    error_msg("scan failed.");
+	    error_msg("Scan failed.");
 	}
 	else {
-	    log_msg("started a new scan with id " . $scan_id);
+	    log_msg("Started a new scan with id " . $scan_id, 1);
 	    $batch_num++;
+	    if($wait) {
+		wait_for_scan($n, $scan_id);
+		log_msg("Scan with id " . $scan_id . " finished.", 1);
+	    }
 	}
+
     }
     return -1;
 }
 
-sub wait {
-    
-#    while (not $n->scan_finished($scanid)) {
-#	print "$scanid: ".$n->scan_status($scanid)."\n";        
-#	sleep 15;
-#    }
+sub status_to_str {
+    my ($n, $sid) = @_;
+    my $stat = $n->scan_full_status($sid);
+    return sprintf("%s [%d/%d]", $stat->{status}, $stat->{current}, $stat->{total});
+}
+
+sub wait_for_scan {
+    my ($n, $scan_id) = @_;
+    while (not $n->scan_finished($scan_id)) {
+
+	log_msg("$scan_id: ". status_to_str($n, $scan_id), 2);
+	sleep 30;
+    }
 }
 
 
@@ -416,6 +436,19 @@ sub parse_nmap_xml {
     my $np = new Nmap::Parser;
     $np->parsefile($file_xml);
     return $np->get_ips("up");
+}
+
+sub parse_targets {
+    my $file = shift;
+    my @targets;
+    my $line;
+    open(FILE, "< $file") or error_msg("Can't open file $file: $!");
+    while(defined($line = <FILE>)) {
+        chomp;
+        push @targets, $line;
+    }
+    close FILE;
+    return @targets;
 }
 
 
