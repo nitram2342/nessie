@@ -444,7 +444,7 @@ sub parse_targets {
     my $line;
     open(FILE, "< $file") or error_msg("Can't open file $file: $!");
     while(defined($line = <FILE>)) {
-        chomp;
+        chomp($line);
         push @targets, $line;
     }
     close FILE;
