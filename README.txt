@@ -85,27 +85,29 @@ Usage
 usage: nessie.pl [ <options> ] <command> [ <command-options> ]
 
   Options: 
-  --server                 - XML-RPC URI of the nessus scan server
-  --user                   - nessus user
-  --password               - password
+  --server                      - XML-RPC URI of the nessus scan server
+  --user                        - nessus user
+  --password                    - password
 
   Commands:
-  --list-policies          - list available scan policies in nessus
-  --scan                   - start a new scan
-    --name <str>           - name of the scan
-    --policy <str|id>      - policy to use for scanning
-    --targets <addrs>      - targets to scan (e.g. '10.0.1.0/24, 10.0.2.0/24')
-    --file <str>           - specify a file with targets (nmap-xml or a plain text 
-                             file with a single target per line)
-    --wait                 - wait for a batch to complete
-  --list-scans             - list running scans
-  --list-reports           - list reports
-  --download <id|name|all> - download report
-  --delete-report <id|all> - download report
-  --pause                  - pause all runnings scans
-  --resume                 - resume all scans
-  --stop                   - stop all scans
-  --batch-size             - split scans into batches (default size 16)
+  --list-policies               - list available scan policies in nessus
+  --scan                        - start a new scan
+    --name <str>                - name of the scan
+    --policy <str|id>           - policy to use for scanning
+    --targets <adr> [... <adr>] - targets to scan (e.g. 10.0.1.0/24 10.0.2.0/24)
+    --file <str>                - specify a file with targets (nmap-xml or a 
+                                  plain text file with a single target per line)
+    --wait                      - wait for a batch to complete
+  --list-scans                  - list running scans
+  --list-reports                - list reports
+  --download <id|name|all>      - download report
+  --delete-report <id|all>      - download report
+  --pause                       - pause all runnings scans
+  --resume                      - resume all scans
+  --stop                        - stop all scans
+  --wait <id>                   - wait for a scan to complete
+  --batch-size                  - split scans into batches (default size 16)
+
 
 
 Examples
