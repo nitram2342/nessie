@@ -19,7 +19,7 @@ print
     " ::    :   : :: ::   :: : :   :: : :     ::  : :: :: \n",
     "\n";
 
-$ENV{HTTPS_CA_FILE} = 'ca';
+$ENV{HTTPS_CA_FILE} = $ENV{HOME} . '/.nessie/ca';
 
 use Getopt::Long;
 use Net::Nessus::XMLRPC;
@@ -55,13 +55,9 @@ my $password;
 
 ### parse config
 
-my $config_file = $Bin . "/.nessie";
+my $config_file = $ENV{HOME} . "/.nessie/config";
 
 # check config file permissions and parse the config
-if((-f $ENV{HOME}. $config_file) and !(-f $config_file)) {
-    $config_file = $ENV{HOME}. $config_file
-}
-
 if(-f $config_file) {
     my $mode = stat($config_file)->mode & 07777;
     if($mode == 0600) {
@@ -102,7 +98,6 @@ GetOptions ("list-policies"   => \$list_policies,
             "user=s"          => \$user,
             "passwordr=s"     => \$password
 );
-
 
 ### login
 my $n;
@@ -168,8 +163,8 @@ elsif($scan) {
     else {
 	error_msg("don't know what to scan"); # will exit
     }
-	    
-    if(!batch_scan($n, $policy_id, $name, \@targets_, $wait, $batch_size)) {
+    
+    if(!batch_scan($n, $policy_id, $name, \@targets_, defined($wait), $batch_size)) {
 	error_msg("Scan failed.");
     }
 
@@ -278,7 +273,7 @@ sub print_help {
 	"  --pause                       - pause all runnings scans\n",
 	"  --resume                      - resume all scans\n",
 	"  --stop                        - stop all scans\n",
-	"  --wait <id>                   - wait for a scan to complete\n",
+	"  --wait <name|id>              - wait for a scan to complete\n",
 	"  --batch-size                  - split scans into batches (default size $batch_size)\n",
 	"\n\n";
 }
@@ -403,8 +398,9 @@ sub download_report {
 
 sub batch_scan {
     my ($n, $policy_id, $name, $hosts, $wait, $batch_size) = @_;
-    
-    my $batch_num = 0;
+
+    my @scans;
+
     while($#$hosts +1 > 0) {
 	my @batch;
 	my $i = 0;
@@ -417,18 +413,27 @@ sub batch_scan {
 	
 
 	if($scan_id eq '') {
-	    error_msg("Scan failed.");
+	    error_msg("Scan failed. Scan ID is '$scan_id'.");
 	}
 	else {
 	    log_msg("Started a new scan with id " . $scan_id, 1);
-	    $batch_num++;
-	    if($wait) {
-		wait_for_scan($n, $scan_id);
-		log_msg("Scan with id " . $scan_id . " finished.", 1);
+	    if($wait and $#scans > -1) {
+		log_msg("Suspend scan with id " . $scan_id, 1);
+		$n->scan_pause($scan_id);
 	    }
+	    push @scans, $scan_id;
 	}
-
     }
+
+    if($wait) {
+	foreach my $sid (@scans) {
+	    log_msg("Resume scan with id " . $sid . ".", 1);
+	    $n->scan_resume($sid);
+	    wait_for_scan($n, $sid);
+	    log_msg("Scan with id " . $sid . " finished.", 1);
+	}
+    }
+
     return -1;
 }
 
@@ -448,7 +453,7 @@ sub wait_for_scan {
     my ($n, $scan_id) = @_;
     log_msg("Waiting for scan to finish: $scan_id");
     while(not $n->scan_finished($scan_id)) {
-#	log_msg("$scan_id: ". status_to_str($n, $scan_id), 2);
+	log_msg("$scan_id: ". status_to_str($n, $scan_id), 2);
 	sleep 15;
     }
 }

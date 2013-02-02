@@ -49,6 +49,17 @@ Install the Nessus scanner module.
   $ make install
 
 
+Write a configuration file:
+
+ $ mkdir ~/.nessie/
+ $ vi ~/.nessie/config
+
+ #user=Nessus
+ password=secret
+
+ If you do not have a configuration file, you need to specify the
+ Nessus credentials via command line parameter.
+
 Get the CA certificate from your Nessus installation:
 
   $ sh get_cert.sh
@@ -60,23 +71,13 @@ Get the CA certificate from your Nessus installation:
   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   -----END CERTIFICATE-----
 
-  Copy the certificate into file 'ca'.
+  Copy the certificate into file ~/.nessie/ca
 
 OR:
 
   Copy the certificates locally:
-  cat /opt/Nessus/com/Nessus/CA/*.pem > ca
+  cat /opt/Nessus/com/Nessus/CA/*.pem > ~/.nessie/ca
 
-
-Write a configuration file:
-
- $ cat .nessie
- #user=Nessus
- password=secret
-
- Place the config file in either the same directory as the client
- or in your home directory. If you do not have a configuration file,
- you need to specify the Nessus credentials via command line parameter.
 
 
 Usage
@@ -105,7 +106,7 @@ usage: nessie.pl [ <options> ] <command> [ <command-options> ]
   --pause                       - pause all runnings scans
   --resume                      - resume all scans
   --stop                        - stop all scans
-  --wait <id>                   - wait for a scan to complete
+  --wait <name|id>              - wait for a scan to complete
   --batch-size                  - split scans into batches (default size 16)
 
 
