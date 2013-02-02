@@ -178,7 +178,7 @@ Download batch of reports:
 
 Inspect report:
 
-  $ perl parse_nessus_reports.pl --files *.nessus --sort severity| less -S
+  $ perl parse_nessus_reports.pl --files *.nessus --dump | less -S
 
   [...]
   0  10.0.0.xx  631/tcp       ipp? | Nessus SNMP Scanner -- SNMP information [..]
@@ -188,6 +188,44 @@ Inspect report:
   0  10.0.0.xx    0/tcp    general | Do not scan printers -- The remote host [..]
   0  10.0.0.xx  137/udp netbios-ns | Windows NetBIOS / SMB Remote Host Infor [..]
   [...]
+
+
+Nessus report browsing:
+
+  $ perl parse_nessus_reports.pl --files *.nessus 
+
+  ┌ Nessie Browser :: Vulnerabilities ───────────────────────────────────────────┐
+  │Sv. Host           Port      Service    Xplt Plugin                          $│
+  │4   192.168.10.xx            general         Unsupported Unix Operating Syste$│
+  │3   192.168.10.xx  80 tcp    www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  80 tcp    www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  80 tcp    www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  80 tcp    www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  443 tcp   www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  443 tcp   www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  443 tcp   www        X    Apache HTTP Server Byte Range Do$│
+  │3   192.168.10.xx  443 tcp   www        X    Apache HTTP Server Byte Range Do$│
+  │2   192.168.10.xx  443 tcp   www        X    TLS CRIME Vulnerability         $│
+  │2   192.168.10.xx  443 tcp   www        X    TLS CRIME Vulnerability         $│
+  │2   192.168.10.xx  443 tcp   www        X    TLS CRIME Vulnerability         $│
+  │2   192.168.10.xx  443 tcp   www        X    TLS CRIME Vulnerability         $│
+  │2   192.168.10.xx  443 tcp   www             SSL Weak Cipher Suites Supported$│
+  │2   192.168.10.xx  443 tcp   www             SSL Weak Cipher Suites Supported$│
+  │2   192.168.10.xx  443 tcp   www             SSL Self-Signed Certificate     $│
+  │2   192.168.10.xx  443 tcp   www             SSL Self-Signed Certificate     $│
+  │┌────────────────────────────────────────────────────────────────────────────┐│
+  ││The web server running on the remote host is affected by a denial of servic$││
+  ││-------------------------------------------------                           ││
+  ││The version of Apache HTTP Server running on the remote host is affected by$││
+  ││                                                                            ││
+  ││Exploit code is publicly available and attacks have reportedly been observe$││
+  ││-------------------------------------------------                           ││
+  ││                                                                            ││
+  ││Nessus determined the server is unpatched and is not using any              ││
+  │└────────────────────────────────────────────────────────────────────────────┘│
+  └──────────────────────────────────────────────────────────────────────────────┘
+
+
 
 Credits
 ----------------
